@@ -1,0 +1,2 @@
+Adding User to the sudo Group!
+sudo -aG sudo uesrname
