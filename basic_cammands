@@ -1,2 +1,6 @@
 Adding User to the sudo Group!
 sudo -aG sudo uesrname
+
+To install debian pakage:
+sudo dpkg -i code_1.57.1-1623937013_amd64.deb 
+
