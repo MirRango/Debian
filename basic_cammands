@@ -4,3 +4,8 @@ sudo -aG sudo uesrname
 To install debian pakage:
 sudo dpkg -i code_1.57.1-1623937013_amd64.deb 
 
+To secure copy files to remote server:
+scp -r (directoryname) distitation x@xxxxx:/home/x    This one is for a directory
+scp test.txt user@192.168.100.44:/home/user           This one is for files
+
+
