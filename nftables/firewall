@@ -1,0 +1,34 @@
+Tables: Tables in nftables refer to a particular protocol family. The table types are
+ip, ip6, inet, arp, bridge, and netdev.
+Chains: Chains in nftables roughly equate to tables in iptables. For example, in
+nftables, you could have filter, route, or NAT chains.
+
+
+sudo apt install nftables
+To show version :>>   nft -V
+To list of installed tables:>>  sudo nft list tables
+cat /etc/nftables.conf 
+Examples of nft configfile:>>  cd /usr/share/doc/nftables/examples
+sudo cp /usr/share/doc/nftables/examples/workstation.nft   /etc/nftables.conf
+
+Allowing ssh,http and dns.
+sudo vi /etc/nftables.conf  ===
+===================
+	tcp dport { 22, 80, 53 } ct state new accept
+             udp dport {53} ct state new accept           
+====================================
+Load the configuration file and view the results:
+sudo systemctl start nftables
+sudo systemctl reload nftables
+To view our new rule:>>  sudo nft list ruleset
+
+Now, when you need to peruse the /var/log/kern.log file to see how many dropped
+packets you've had, just search for the Dropped packet text string.
+Now, let's say that we want to block certain IP addresses from reaching the Secure Shell
+port of this machine. Do so this, we can edit the file, placing a drop rule above the rule that
+opens port 22 . The relevant section of the file would look like this:
+tcp dport 22 ip saddr { 192.168.0.7, 192.168.0.10 } log prefix "Blocked SSH
+packets: " drop
+tcp dport { 22, 53 } ct state new accept
+
+Now to view log file:>>  cat /var/log/kern.log 
