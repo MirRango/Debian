@@ -32,3 +32,68 @@ packets: " drop
 tcp dport { 22, 53 } ct state new accept
 
 Now to view log file:>>  cat /var/log/kern.log 
+
+
+sudo nft delete table inet filter
+sudo nft list tables
+sudo nft add table inet ubuntu_filter
+sudo nft list tables
+
+Every nft command that you enter takes effect immediately. So, if you're
+doing this remotely, you'll drop your Secure Shell connection as soon as
+you create a filter chain with a default drop policy.
+Some people like to create chains with a default accept policy, and then
+add a drop rule as the final rule. Other people like to create chains with a
+default drop policy, and then leave off the drop rule at the end. Be sure to
+check your local procedures to see what your organization prefers.
+
+sudo nft add chain inet ubuntu_filter  input { type filter hook input priority 0\; policy drop\; }
+I lost my remote connection beacause of policy drop command:
+I am adding to the new filter to the local server to allow remote connection.
+
+sudo nft add rule inet ubuntu_filter input ct state established accept
+sudo nft add rule inet ubuntu_filter input tcp dport 22 ct state new accept
+ 
+We can do this to avoid losing ssh remote conection: 
+1 sudo nft add chain inet ubuntu_filter  input { type filter hook input priority 0\; }
+2 sudo nft add rule inet ubuntu_filter input ct state established accept
+3 sudo nft add rule inet ubuntu_filter input tcp dport 22 ct state new accept
+4 sudo nft add chain inet ubuntu_filter  input { type filter hook input priority 0\; policy drop\; }
+
+we forgot to create a rule to allow the loopback adapter to accept packets.
+Since we want this rule to be at the top of the rules list, we'll use insert instead of add :
+sudo nft insert rule inet ubuntu_filter input iif lo accept
+
+
+Now, we're all set. But what if we want to insert a rule at a specific location? For that, you'll
+need to use list with the -a option to see the rule handles:
+sudo nft list table inet ubuntu_filter -a
+As you can see, there's no real rhyme or reason to the way the handles are numbered. Let's
+say that we want to insert the rule about blocking certain IP addresses from accessing the
+Secure Shell port. We can see that the SSH accept rule is handle 3 , so we'll need to insert
+our drop rule before it. This command will look like this:
+sudo nft insert rule inet ubuntu_filter input position 3 tcp dport 22 ip saddr {192.168.0.112, 192.168.0.120} drop
+
+
+So, to place the rule before the rule with the handle 3 label, we have to insert it at position
+3 . The new rule that we just inserted has the label handle 6 . To delete a rule, we have to
+specify the rule's handle number:
+sudo nft delete rule inet ubuntu_filter input handle 6
+
+As is the case with iptables, everything you do from the command line will disappear once
+you reboot the machine. To make it permanent, let's redirect the output of the list
+subcommand to the nftables.conf configuration file (of course, we'll want to have made
+a backup copy of the already-existing file, in case we want to revert back to it):
+sudo sh -c "nft list table inet ubuntu_filter > /etc/nftables.conf"
+Due to a quirk in the Bash shell, we can't just redirect output to a file in the /etc directory
+in the normal manner, even when we use sudo . That's why I had to add the sh -c
+command, with the nft list command surrounded by double quotes. Also, note that the
+file has to be named nftables.conf because that's what the nftables systemd service
+looks for. Now, when we look at the file, we'll see that there are a couple of things that are
+missing:
+cat /etc/nftables.conf
+Those of you who are sharp-eyed will see that we're missing the flush rule and the
+shebang line to specify the shell that we want to interpret this script. Let's add them:
+#!/usr/sbin/nft -f
+
+sudo vi etcnftables.conf
